@@ -9,73 +9,48 @@ public class Main {
         int n = in.nextInt();
         System.out.println("Введите победителя: 1 - курица, 2 - яйцо");
         int winnerNum = in.nextInt();
-
+        Object victory =new Object();
+        Scream eggVoice = new Scream ("яйцо!", n, victory);
+        Scream chickenVoice = new Scream ("курица!", n, victory);
         if (winnerNum==1) {
-            Looser eggVoice = new Looser ("яйцо!", n);
-            eggVoice.start();
-            Winner chickenVoice = new Winner ("курица!", n, eggVoice);
-            chickenVoice.start();
+            eggVoice.setPriority(Thread.MAX_PRIORITY);
+            chickenVoice.setPriority(Thread.MIN_PRIORITY);
+            new Thread(eggVoice).start();
+            new Thread(chickenVoice).start();
         }
         if (winnerNum==2) {
-            Looser chickenVoice = new Looser ("курица!", n);
-            chickenVoice.start();
-            Winner eggVoice = new Winner ("яйцо!", n, chickenVoice);
-            eggVoice.start();
+            chickenVoice.setPriority(Thread.MAX_PRIORITY);
+            eggVoice.setPriority(Thread.MIN_PRIORITY);
+            new Thread(chickenVoice).start();
+            new Thread(eggVoice).start();
         }
     }
 }
 
-class Looser extends Thread {
+class Scream extends Thread {
     private int n;
     private String name;
-
-    Looser (String name, int n){
+    private Object victory;
+    Scream (String name, int n, Object victory){
         this.name=name;
         this.n=n;
+        this.victory=victory;
+
     }
 
     @Override
-    public void run() {
-        for (int i = 0; i < n; i++) {
-            try {
-                Thread.sleep(300);
-            } catch (InterruptedException e) {
-
+    public void run(){
+        try {
+            synchronized (victory) {
+                for (int i = 0; i < n; i++) {
+                    System.out.println(name);
+                    victory.notify();
+                    victory.wait();
+                }
+                victory.notify();
             }
+        } catch (InterruptedException e) {
 
-            System.out.println(name);
-        }
-    }
-}
-class Winner extends Thread {
-    private int n;
-    private String name;
-    private Looser looserName;
-
-    Winner (String name, int n, Looser looserName){
-        this.name=name;
-        this.n=n;
-        this.looserName = looserName;
-    }
-
-    @Override
-    public void run() {
-        for (int i = 0; i < (n-1); i++) {
-            try {
-                Thread.sleep(300); //Приостанавливаем поток на секунду
-            } catch (InterruptedException e) {
-                // никак не реагируем на исключение
-            }
-
-            System.out.println(name);
-        }
-        if (looserName.isAlive()) { //Если оппонент еще не сказал последнее слово
-            try {
-                looserName.join(); //Подождать пока оппонент закончит высказываться.
-            } catch (InterruptedException e) {
-                // никак не реагируем на исключение
-            }
-            System.out.println(name);
         }
     }
 }
